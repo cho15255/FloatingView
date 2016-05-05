@@ -11,6 +11,7 @@
 @interface ViewController() <UINavigationControllerDelegate, UIImagePickerControllerDelegate>
 
 @property (strong, nonatomic) UIImagePickerController *cameraController;
+@property (nonatomic) Boolean isEnlarged;
 
 @end
 
@@ -35,6 +36,7 @@ const int smallY = 120;
         _cameraController.navigationBarHidden = YES;
         _cameraController.edgesForExtendedLayout = UIRectEdgeNone;
         [_cameraController.view setBounds:CGRectMake(0, 0, smallX, smallY)];
+        _isEnlarged = NO;
         
         [self.view addSubview:_cameraController.view];
         [_cameraController viewWillAppear:YES];
@@ -61,9 +63,42 @@ const int smallY = 120;
 }
 
 - (void)panRecognizer:(UIPanGestureRecognizer *)gr {
+    // need to smooth this part
     CGPoint p = [gr locationInView:_cameraController.view];
-    NSLog([NSString stringWithFormat:@"x:%f, y:%f", p.x, p.y]);
-    [_cameraController.view setCenter:[gr locationInView:self.view]];
+    
+    CGFloat lowerThresholdX;
+    CGFloat lowerThresholdY;
+    CGFloat upperThresholdX;
+    CGFloat upperThresholdY;
+    
+    if (_isEnlarged) {
+        lowerThresholdX = 20 + largeX/2;
+        lowerThresholdY = 20 + largeY/2;
+        upperThresholdX = [[UIScreen mainScreen] bounds].size.width - 20 - largeX/2;
+        upperThresholdY = [[UIScreen mainScreen] bounds].size.height - 20 - largeY/2;
+        
+    } else {
+        lowerThresholdX = 20 + smallX/2;
+        lowerThresholdY = 20 + smallY/2;
+        upperThresholdX = [[UIScreen mainScreen] bounds].size.width - 20 - smallX/2;
+        upperThresholdY = [[UIScreen mainScreen] bounds].size.height - 20 - smallY/2;
+    }
+    
+    CGPoint center = CGPointMake([gr locationInView:self.view].x, [gr locationInView:self.view].y);
+    
+    if (center.x < lowerThresholdX) {
+        center.x = lowerThresholdX;
+    } else if (center.x > upperThresholdX) {
+        center.x = upperThresholdX;
+    }
+    
+    if (center.y < lowerThresholdY) {
+        center.y = lowerThresholdY;
+    } else if (center.y > upperThresholdY) {
+        center.y = upperThresholdY;
+    }
+    
+    [_cameraController.view setCenter:center];
 }
 
 - (void)swipeUp:(UISwipeGestureRecognizer *)gr {
